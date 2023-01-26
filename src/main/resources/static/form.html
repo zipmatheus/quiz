@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Perguntas Quiz</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+</head>
+
+<body>
+    <style>
+        h2 {
+            text-align: center;
+        }
+
+        #corpoTabela {
+            cursor: pointer;
+        }
+    </style>
+    <div class="container">
+        <h2>Gerenciar Perguntas Quiz</h2>
+        <div id="alerta" class="alert col-sm-offset-2">
+
+        </div>
+        <div class="form-horizontal">
+            <div class="form-group">
+                <label class="control-label col-sm-2" for="pergunta">Pergunta:</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="pergunta" placeholder="" name="pergunta" value="">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-sm-2" for="opcao01">Opção 01:</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="opcao01" placeholder="" value="">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-sm-2" for="opcao02">Opção 02:</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="opcao02" placeholder="" value="">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-sm-2" for="opcao03">Opção 03:</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="opcao03" placeholder="" value="">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-sm-2" for="opcao04">Opção 04:</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="opcao04" placeholder="" value="">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-sm-2" for="">Opção Correta:</label>
+                <div class="col-sm-10">
+                    <label class="radio-inline">
+                        <input type="radio" name="opcaoCorreta" value="1">Opção 01
+                    </label>
+                    <label class="radio-inline">
+                        <input type="radio" name="opcaoCorreta" value="2">Opção 02
+                    </label>
+                    <label class="radio-inline">
+                        <input type="radio" name="opcaoCorreta" value="3">Opção 03
+                    </label>
+                    <label class="radio-inline">
+                        <input type="radio" name="opcaoCorreta" value="4">Opção 04
+                    </label>
+                </div>
+            </div>
+            <input type="hidden" id="id" value="">
+            <input type="hidden" id="index" value="">
+            <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
+                    <button type="submit" onclick="gravar()" class="btn btn-default">Gravar</button>
+                    <button type="submit" onclick="limparForm();limparAlerta();" class="btn btn-default">Novo</button>
+                    <button type="submit" onclick="apagar()" class="btn btn-default">Apagar</button>
+                </div>
+            </div>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>
+                        Pergunta
+                    </th>
+                    <th>
+                        Resposta Correta
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="corpoTabela">
+
+            </tbody>
+        </table>
+    </div>
+    <script>
+        let baseQuiz = "";
+        xhttp = new XMLHttpRequest();
+        var api = "/api/quiz/";
+
+        function buscarQuiz() {
+            xhttp.open("GET", api);
+            xhttp.send();
+            xhttp.onload = function () {
+                atualizarTabela(this.responseText);
+            };
+        }
+        buscarQuiz();
+
+        function gravarQuiz(quiz) {
+            
+            // alert(JSON.stringify(quiz));
+            
+            xhttp.open("PUT", api);
+            xhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            xhttp.send(JSON.stringify(quiz));
+            xhttp.onload = function () {
+                limparForm();
+                buscarQuiz();
+            };
+        }
+
+        function atualizarTabela(quizApi) {
+            // baseQuiz = localStorage.getItem("baseQuiz");
+            baseQuiz = JSON.parse(quizApi);
+            console.log(baseQuiz);
+            let corpoTabela = "";
+            for (i in baseQuiz) {
+                let pergunta = baseQuiz[i].pergunta;
+                let respostaCorreta = baseQuiz[i].respostas[baseQuiz[i].correta];
+                corpoTabela += `<tr onclick="editar(${i})" ><td>${pergunta}</td><td>${respostaCorreta}</td></tr>`;
+            }
+            document.getElementById("corpoTabela").innerHTML = corpoTabela;
+        }
+
+
+        function editar(index) {
+            let quiz = baseQuiz[index];
+            console.log(quiz);
+            document.getElementById("index").value = index;
+            document.getElementById("id").value = quiz.id;
+            document.getElementById("pergunta").value = quiz.pergunta;
+            document.getElementById("opcao01").value = quiz.respostas[0];
+            document.getElementById("opcao02").value = quiz.respostas[1];
+            document.getElementById("opcao03").value = quiz.respostas[2];
+            document.getElementById("opcao04").value = quiz.respostas[3];
+            // console.log(quiz.correta);
+            let listaOpcao = document.getElementsByName("opcaoCorreta");
+            for (i in listaOpcao) {
+                if (listaOpcao[i].value - 1 == quiz.correta) {
+                    listaOpcao[i].checked = true;
+                    break;
+                }
+            }
+            limparAlerta();
+        }
+
+        function gravar() {
+            let lista = document.querySelectorAll('input');
+            let quiz = { respostas: [] };
+            let id = "";
+            for (i in lista) {
+                // console.log(lista[i].value);
+                if (i == 0) {
+                    quiz.pergunta = lista[i].value;
+                }
+                if (i >= 1 && i <= 4) {
+                    // verificar se as opções foram preenchidas para entrar no array
+                    if (lista[i].value != "") {
+                        quiz.respostas[i - 1] = lista[i].value;
+                    }
+                }
+                if (i >= 5 && i <= 8) {
+                    // console.log(`${i-5} ${lista[i].checked}`)
+                    if (lista[i].checked) {
+                        quiz.correta = i - 5;
+                    }
+                }
+                if (i == 9) {
+                    id = lista[i].value;
+                }
+                if (i == 10) {
+                    index = lista[i].value;
+                }
+            }
+            let msg = "";
+            // validar se o formulário/objeto quiz esta devidamente preenchido
+            if (quiz.pergunta == "") {
+                msg += "Necessário preencher a pergunta!<br>";
+            }
+
+            // validar se todas as opções de respta foram preenchida
+            if (quiz.respostas.length < 4) {
+                msg += "Necessário preencher todas as opções de resposta!<br>";
+            }
+
+            if (verificaOpcaoRepetida(quiz)) {
+                msg += "Existe uma opção repetida!<br>";
+            }
+
+            // validar se a opção correta foi selecionada
+            if (quiz.correta == undefined) {
+                msg += "Necessário selecionar a opção correta!<br>";
+            }
+            let alerta = document.querySelector("#alerta");
+            if (msg != "") {
+                alerta.innerHTML = msg;
+                alerta.classList.add("alert-danger");
+                return;
+            } else {
+                alerta.innerHTML = "Novo item do quiz adicionado!";
+                alerta.classList.remove("alert-danger");
+                alerta.classList.add("alert-success");
+            }
+
+            
+
+            // console.log(quiz);
+            if (id != "") {
+                quiz.id = id;
+            } 
+            console.log(quiz);
+            gravarQuiz(quiz);
+            // localStorage.setItem('baseQuiz', JSON.stringify(baseQuiz));
+            // limparForm();
+            // buscarQuiz();
+        }
+
+        function verificaOpcaoRepetida(quiz) {
+            for (i = 0; i <= 2; i++) {
+                for (j = i + 1; j <= 3; j++) {
+                    console.log(`${i} ${j}`);
+                    console.log(quiz.respostas[i] + " " + quiz.respostas[j]);
+                    if (quiz.respostas[i] == quiz.respostas[j]) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function limparForm() {
+            let lista = document.querySelectorAll('input');
+            for (i in lista) {
+                if (i >= 0 && i <= 4) {
+                    lista[i].value = "";
+                }
+                if (i >= 5 && i <= 8) {
+                    lista[i].checked = false;
+                }
+                if (i >= 9) {
+                    lista[i].value = "";
+                }
+            }
+            //limparAlerta();
+        }
+
+        function limparAlerta() {
+            document.querySelector("#alerta").innerHTML = "";
+            document.querySelector("#alerta").classList.remove('alert-danger');
+            document.querySelector("#alerta").classList.remove('alert-success');
+        }
+
+        function apagar() {
+            id = document.getElementById("id").value;
+            if(id == ""){
+                alerta.innerHTML = "Necessário selecionar uma pergunta!";
+                alerta.classList.add("alert-danger");
+                return ;
+            }
+            if (confirm("Tem certeza que quer apagar essa pergunta?")) {
+                xhttp.open("DELETE", api + id);
+                xhttp.send();
+                xhttp.onload = function () {
+                alert(this.responseText);
+                limparForm();
+                buscarQuiz();
+            }
+        }
+
+    }
+    </script>
+</body>
+
+</html>

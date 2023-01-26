@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de quiz</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+</head>
+
+<body>
+
+    <style>
+        h1 {
+            text-align: center;
+        }
+        h2 {
+            background-color: cadetblue;
+            padding: 15px;
+            border-radius: 15px;
+            color: white;
+            text-align: center;
+        }
+
+        h3 {
+            background-color: rgb(233, 233, 233);
+            padding: 15px;
+            border-radius: 15px;
+        }
+
+        h3:hover {
+            background-color: #cccccc;
+            cursor: pointer;
+        }
+
+        h3 span {
+            font-weight: bolder;
+        }
+
+        #next,
+        #reiniciar {
+            display: block;
+        }
+    </style>
+
+    <div class="container">
+        <h1>Quiz do SENAI</h1>
+        <h2>
+            Nenhuma pergunta registrada?
+        </h2>
+        <h3>
+            <span>A</span>
+            Resposta
+        </h3>
+        <h3>
+            <span>B</span>
+            Resposta
+        </h3>
+        <h3>
+            <span>C</span>
+            Resposta
+        </h3>
+        <h3>
+            <span>D</span>
+            Resposta
+        </h3>
+        <div class="btn btn-primary" id="next" onclick="next()">
+            Next
+        </div>
+        <div class="btn btn-primary" id="reiniciar" onclick="reiniciar()">
+            Reiniciar
+        </div>
+    </div>
+    <script>
+        let placar = {
+            acertos: 0,
+            erros: 0
+        }
+        function verificarResposta(i) {
+            if (quiz.ponto >= 0) return;
+
+            document.querySelectorAll('h3')[i].style.backgroundColor = '#ff5555';
+            document.querySelectorAll('h3')[quiz.correta].style.backgroundColor = '#56c856';
+            if (i == quiz.correta) {
+                quiz.ponto = 1;
+                placar.acertos += 1;
+            } else {
+                quiz.ponto = 0;
+                placar.erros += 1;
+            }
+        }
+        
+        
+        let lsPergunta = [];
+        let quizAtual = 0;
+        let quiz = {};
+        xhttp = new XMLHttpRequest();
+
+        function buscarQuiz() {
+            xhttp.open("GET", "/api/quiz/");
+            xhttp.send();
+            xhttp.onload = function () {
+                iniciarQuiz(this.responseText);
+            };
+        }
+        buscarQuiz();
+
+        function iniciarQuiz(apiQuiz) {
+            
+            lsPergunta = JSON.parse(apiQuiz);
+            embaralharPerguntas();
+            carregarQuiz(quizAtual);
+        }
+
+        function carregarQuiz(nPergunta) {
+                embaralharRespotas(nPergunta);
+                quiz = lsPergunta[nPergunta];
+                document.querySelector('h2').innerHTML = quiz.pergunta;
+                for (let i = 0; i < 4; i++) {
+                    document.querySelectorAll('h3')[i].style.backgroundColor = '#cccccc';
+                    document.querySelectorAll('h3')[i].innerHTML = quiz.respostas[i];
+                    let x = i;
+                    document.querySelectorAll('h3')[i].addEventListener(
+                        'click', () => { verificarResposta(x) });
+                }
+            }
+
+        function next() {
+            // console.log(quizAtual);
+            // console.log(lsPergunta.length-1);
+            // console.log(quizAtual == lsPergunta.length-1);
+            if (quiz.ponto == undefined) {
+                alert('Antes de ir para o próxima pergunta responda essa!');
+                return;
+            }
+            if (quizAtual == lsPergunta.length - 1) {
+                fimQuiz();
+                return;
+            }
+            carregarQuiz(++quizAtual);
+        }
+
+        function fimQuiz() {
+            document.querySelector('h2').innerHTML = 'Resultado do Quiz';
+            document.querySelectorAll('h3')[0].innerHTML = `Acertos: ${placar.acertos}`;
+            document.querySelectorAll('h3')[1].innerHTML = `Erros: ${placar.erros}`;
+
+            document.querySelectorAll('h3')[0].style.backgroundColor = '#56c856';
+            document.querySelectorAll('h3')[1].style.backgroundColor = '#ff5555';
+
+            document.querySelectorAll('h3')[2].style.display = 'none';
+            document.querySelectorAll('h3')[3].style.display = 'none';
+
+            document.querySelector('#next').style.display = 'none';
+            document.querySelector('#reiniciar').style.display = 'block';
+        }
+        document.querySelector('#reiniciar').style.display = 'none';
+
+        function reiniciar() {
+            let resp = confirm('Deseja reiniciar o Quiz?');
+            if (resp) {
+                // window.location.href = "";
+                window.location.replace("");
+            }
+        }
+
+        function embaralharPerguntas() {
+            let listaTemporaria = [];
+            let cont = 0;
+            while (lsPergunta.length > 0) {
+                let numSorteado = Math.trunc(Math.random() * lsPergunta.length);
+                listaTemporaria[cont] = lsPergunta.splice(numSorteado, 1)[0];
+                cont++;
+            }
+            lsPergunta = listaTemporaria;
+        }
+
+        function embaralharRespotas(nPergunta) {
+            let listaTemporaria = [];
+            let quiz = lsPergunta[nPergunta];
+            let cont = 0;
+            let lsRespostas = quiz.respostas;
+            let opcaoCorreta = lsRespostas[quiz.correta];
+            console.log(opcaoCorreta);
+            while (lsRespostas.length > 0) {
+                let numSorteado = Math.trunc(Math.random() * lsRespostas.length);
+                listaTemporaria[cont] = lsRespostas.splice(numSorteado, 1)[0];
+                if (opcaoCorreta == listaTemporaria[cont]) {
+                    quiz.correta = cont;
+                }
+                cont++;
+            }
+            quiz.respostas = listaTemporaria;
+        }
+
+    </script>
+
+
+</body>
+
+</html>
